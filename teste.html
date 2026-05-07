@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Interativo: Fluxo do Processo Administrativo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .option-card { transition: all 0.2s; cursor: pointer; }
+        .option-card:hover:not(.disabled) { border-color: #3b82f6; background-color: #eff6ff; }
+        .correct { background-color: #dcfce7 !important; border-color: #22c55e !important; color: #166534 !important; }
+        .incorrect { background-color: #fee2e2 !important; border-color: #ef4444 !important; color: #991b1b !important; }
+        .disabled { cursor: default; pointer-events: none; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-3xl mx-auto">
+        <header class="mb-10 text-center">
+            <h1 class="text-3xl font-bold text-slate-900">Desafio: Fluxo Documental</h1>
+            <p class="text-slate-600 mt-2 text-sm uppercase tracking-wider font-semibold">Teste seus conhecimentos técnicos</p>
+            <div id="progress-bar" class="w-full bg-slate-200 h-2 mt-6 rounded-full overflow-hidden">
+                <div id="progress-fill" class="bg-blue-600 h-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+        </header>
+
+        <div id="quiz-box">
+            <!-- As perguntas serão inseridas via JavaScript -->
+        </div>
+
+        <div id="result-screen" class="hidden text-center p-10 bg-white rounded-2xl shadow-xl border border-slate-200">
+            <h2 class="text-4xl font-bold text-slate-800 mb-4">Quiz Finalizado!</h2>
+            <p id="score-text" class="text-2xl text-blue-600 font-bold mb-6"></p>
+            <button onclick="location.reload()" class="bg-slate-900 text-white px-8 py-3 rounded-full font-bold hover:bg-slate-800 transition">Tentar Novamente</button>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            {
+                q: "Na Fase 1 (Produção), como o e-ARQ Brasil classifica um documento criado diretamente no editor do sistema?",
+                options: [
+                    "Documento Híbrido",
+                    "Documento Nato-digital",
+                    "Documento Externo",
+                    "Documento de Apoio"
+                ],
+                correct: 1,
+                explanation: "Documentos internos criados no SIGAD são nato-digitais. Documentos externos são aqueles que entram no sistema vindos de fora."
+            },
+            {
+                q: "Qual destes conjuntos de metadados deve ser obrigatoriamente preenchido no momento do Registro?",
+                options: [
+                    "Data de nascimento, CPF e Endereço",
+                    "Valor financeiro, Prazo de guarda e Cor",
+                    "Tipo Documental, Assunto, Interessado e Nível de Acesso",
+                    "Apenas o Nome do Arquivo e Extensão"
+                ],
+                correct: 2,
+                explanation: "Estes quatro metadados são o mínimo necessário para garantir a proveniência e a usabilidade do documento no SIGAD/SEI."
+            },
+            {
+                q: "O ato de reunir diversos itens documentais em uma unidade lógica para análise de um assunto chama-se:",
+                options: [
+                    "Classificação",
+                    "Arquivamento",
+                    "Autuação",
+                    "Digitalização"
+                ],
+                correct: 2,
+                explanation: "A Autuação transforma o item isolado em um Processo Administrativo formal."
+            },
+            {
+                q: "Para garantir a rastreabilidade (quem enviou, quem recebeu e quando), o sistema utiliza:",
+                options: [
+                    "Tabelas de Temporalidade",
+                    "Trilhas de Auditoria",
+                    "Planos de Classificação",
+                    "Pastas de Favoritos"
+                ],
+                correct: 1,
+                explanation: "A trilha de auditoria é o metadado de processo que registra todas as movimentações e acessos."
+            },
+            {
+                q: "No controle de versão, qual é o status de um documento assinado eletronicamente e pronto para gerar efeitos legais?",
+                options: [
+                    "Minuta",
+                    "Rascunho",
+                    "Original",
+                    "Cópia simples"
+                ],
+                correct: 2,
+                explanation: "Uma vez assinado, o documento deixa de ser minuta e torna-se o Original (Documento Assinado)."
+            },
+            {
+                q: "O instrumento que determina por quanto tempo um processo fica no setor (Corrente) antes de ser eliminado ou guardado para sempre é:",
+                options: [
+                    "O Organograma",
+                    "A Tabela de Temporalidade e Destinação (TTD)",
+                    "O Plano de Carreira",
+                    "O Código de Ética"
+                ],
+                correct: 1,
+                explanation: "A TTD é o único instrumento legal que dita o ciclo de vida e a destinação dos documentos."
+            },
+            {
+                q: "Por que o SIGAD impede a exclusão de documentos assinados ou a renumeração de peças de um processo?",
+                options: [
+                    "Para economizar espaço no servidor",
+                    "Para garantir a Integridade e o valor de prova",
+                    "Por uma limitação técnica do banco de dados",
+                    "Para facilitar a leitura por robôs"
+                ],
+                correct: 1,
+                explanation: "A Integridade garante que o registro dos fatos não foi adulterado, protegendo a segurança jurídica da instituição."
+            }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+
+        function loadQuestion() {
+            const quizBox = document.getElementById('quiz-box');
+            const qData = questions[currentQuestion];
+            
+            // Atualiza barra de progresso
+            document.getElementById('progress-fill').style.width = `${(currentQuestion / questions.length) * 100}%`;
+
+            quizBox.innerHTML = `
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mb-6">
+                    <span class="text-blue-600 font-bold text-sm uppercase tracking-widest">Pergunta ${currentQuestion + 1} de ${questions.length}</span>
+                    <h2 class="text-2xl font-bold text-slate-800 mt-2 mb-8">${qData.q}</h2>
+                    <div class="space-y-3">
+                        ${qData.options.map((opt, i) => `
+                            <div onclick="checkAnswer(${i})" id="opt-${i}" class="option-card p-4 border-2 border-slate-100 rounded-xl font-medium text-slate-700 flex items-center">
+                                <span class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center mr-4 text-xs font-bold">${String.fromCharCode(65 + i)}</span>
+                                ${opt}
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div id="explanation" class="hidden mt-8 p-4 bg-blue-50 border-l-4 border-blue-400 text-sm text-blue-800 rounded">
+                        <strong>Por quê?</strong> ${qData.explanation}
+                        <button onclick="nextQuestion()" class="block mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-700 transition">Próxima Pergunta</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function checkAnswer(selected) {
+            const qData = questions[currentQuestion];
+            const options = document.querySelectorAll('.option-card');
+            
+            options.forEach(opt => opt.classList.add('disabled'));
+
+            if (selected === qData.correct) {
+                document.getElementById(`opt-${selected}`).classList.add('correct');
+                score++;
+            } else {
+                document.getElementById(`opt-${selected}`).classList.add('incorrect');
+                document.getElementById(`opt-${qData.correct}`).classList.add('correct');
+            }
+
+            document.getElementById('explanation').classList.remove('hidden');
+        }
+
+        function nextQuestion() {
+            currentQuestion++;
+            if (currentQuestion < questions.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            document.getElementById('quiz-box').classList.add('hidden');
+            document.getElementById('progress-fill').style.width = '100%';
+            const resultScreen = document.getElementById('result-screen');
+            resultScreen.classList.remove('hidden');
+            
+            const percentage = Math.round((score / questions.length) * 100);
+            let message = "";
+            if(percentage === 100) message = "Perfeito! Você é um mestre arquivista.";
+            else if(percentage >= 70) message = "Muito bom! Seus conhecimentos estão sólidos.";
+            else message = "Continue estudando os conceitos de SIGAD e TTD.";
+
+            document.getElementById('score-text').innerHTML = `Você acertou ${score} de ${questions.length} (${percentage}%)<br><span class="text-lg font-normal text-slate-600">${message}</span>`;
+        }
+
+        // Início
+        loadQuestion();
+    </script>
+</body>
+</html>
